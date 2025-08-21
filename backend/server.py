@@ -1,15 +1,29 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException, Form
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import uuid
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
-import uuid
-from datetime import datetime
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
+import json
+import io
+import tempfile
+import shutil
 
+# File processing imports
+import PyPDF2
+import pytesseract
+from PIL import Image
+import magic
+
+# AI imports
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -20,37 +34,362 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(title="StudyGenie API", description="AI-Powered Study Guide Generator")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
+# Pydantic Models
+class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    filename: str
+    file_type: str
+    content: str
+    summary: Optional[str] = None
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    processed_at: Optional[datetime] = None
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class Quiz(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    document_id: str
+    questions: List[Dict[str, Any]]
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-# Add your routes to the router instead of directly to app
+class Flashcard(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    document_id: str
+    cards: List[Dict[str, str]]  # [{"term": "...", "definition": "..."}]
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    document_id: str
+    message: str
+    response: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChatRequest(BaseModel):
+    document_id: str
+    message: str
+
+# AI Service Classes
+class AIContentGenerator:
+    def __init__(self):
+        self.api_key = os.environ.get('EMERGENT_LLM_KEY')
+        
+    async def generate_summary(self, content: str) -> str:
+        """Generate a concise summary of the document content"""
+        try:
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"summary_{uuid.uuid4()}",
+                system_message="You are an expert at creating concise, informative summaries of study materials. Create clear, structured summaries that capture the key concepts and main points."
+            ).with_model("openai", "gpt-4o-mini")
+            
+            user_message = UserMessage(
+                text=f"Please create a comprehensive summary of the following study material. Focus on key concepts, main points, and important details that a student should remember:\n\n{content[:8000]}"
+            )
+            
+            response = await chat.send_message(user_message)
+            return response
+        except Exception as e:
+            logger.error(f"Error generating summary: {e}")
+            return "Unable to generate summary at this time."
+
+    async def generate_quiz(self, content: str) -> List[Dict[str, Any]]:
+        """Generate a 10-question multiple choice quiz"""
+        try:
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"quiz_{uuid.uuid4()}",
+                system_message="You are an expert quiz creator. Create challenging but fair multiple-choice questions based on study material. Return only valid JSON format."
+            ).with_model("openai", "gpt-4o-mini")
+            
+            user_message = UserMessage(
+                text=f"""Create exactly 10 multiple-choice questions based on this study material. Return ONLY a JSON array in this exact format:
+[
+  {{
+    "question": "Question text here?",
+    "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+    "correct_answer": "A",
+    "explanation": "Explanation for the correct answer"
+  }}
+]
+
+Study Material:
+{content[:6000]}"""
+            )
+            
+            response = await chat.send_message(user_message)
+            # Parse JSON response
+            try:
+                questions = json.loads(response)
+                return questions
+            except json.JSONDecodeError:
+                logger.error("Failed to parse quiz JSON response")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error generating quiz: {e}")
+            return []
+
+    async def generate_flashcards(self, content: str) -> List[Dict[str, str]]:
+        """Generate flashcards with key terms and definitions"""
+        try:
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"flashcards_{uuid.uuid4()}",
+                system_message="You are an expert at creating educational flashcards. Extract key terms, concepts, and definitions from study materials."
+            ).with_model("openai", "gpt-4o-mini")
+            
+            user_message = UserMessage(
+                text=f"""Create flashcards from this study material. Return ONLY a JSON array in this exact format:
+[
+  {{
+    "term": "Key term or concept",
+    "definition": "Clear, concise definition or explanation"
+  }}
+]
+
+Create 15-20 flashcards covering the most important concepts. Study Material:
+{content[:6000]}"""
+            )
+            
+            response = await chat.send_message(user_message)
+            try:
+                flashcards = json.loads(response)
+                return flashcards
+            except json.JSONDecodeError:
+                logger.error("Failed to parse flashcards JSON response")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error generating flashcards: {e}")
+            return []
+
+    async def chat_with_document(self, content: str, user_question: str) -> str:
+        """AI tutor chat functionality with RAG"""
+        try:
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"tutor_{uuid.uuid4()}",
+                system_message=f"You are an AI tutor helping students understand their study material. Answer questions based on the provided document content. Be helpful, clear, and educational. Here's the document content for reference:\n\n{content[:6000]}"
+            ).with_model("openai", "gpt-4o-mini")
+            
+            user_message = UserMessage(
+                text=user_question
+            )
+            
+            response = await chat.send_message(user_message)
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error in chat: {e}")
+            return "I'm sorry, I'm having trouble responding right now. Please try again."
+
+# File Processing Functions
+def extract_text_from_pdf(file_content: bytes) -> str:
+    """Extract text from PDF file"""
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text.strip()
+    except Exception as e:
+        logger.error(f"Error extracting PDF text: {e}")
+        return ""
+
+def extract_text_from_image(file_content: bytes) -> str:
+    """Extract text from image using OCR"""
+    try:
+        image = Image.open(io.BytesIO(file_content))
+        text = pytesseract.image_to_string(image)
+        return text.strip()
+    except Exception as e:
+        logger.error(f"Error extracting image text: {e}")
+        return ""
+
+def get_file_type(file_content: bytes) -> str:
+    """Determine file type using python-magic"""
+    try:
+        mime_type = magic.from_buffer(file_content, mime=True)
+        return mime_type
+    except Exception as e:
+        logger.error(f"Error determining file type: {e}")
+        return "unknown"
+
+# Initialize AI generator
+ai_generator = AIContentGenerator()
+
+# API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "StudyGenie API is running!"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
+@api_router.post("/upload", response_model=Document)
+async def upload_document(file: UploadFile = File(...)):
+    """Upload and process a document (PDF or image)"""
+    try:
+        # Read file content
+        file_content = await file.read()
+        file_type = get_file_type(file_content)
+        
+        # Extract text based on file type
+        text_content = ""
+        if "pdf" in file_type.lower():
+            text_content = extract_text_from_pdf(file_content)
+        elif "image" in file_type.lower():
+            text_content = extract_text_from_image(file_content)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF or image files.")
+        
+        if not text_content.strip():
+            raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
+        
+        # Create document record
+        document = Document(
+            filename=file.filename,
+            file_type=file_type,
+            content=text_content
+        )
+        
+        # Save to database
+        await db.documents.insert_one(document.dict())
+        
+        # Generate summary in background
+        asyncio.create_task(generate_content_for_document(document.id, text_content))
+        
+        return document
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process document")
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+async def generate_content_for_document(document_id: str, content: str):
+    """Background task to generate summary, quiz, and flashcards"""
+    try:
+        # Generate summary
+        summary = await ai_generator.generate_summary(content)
+        await db.documents.update_one(
+            {"id": document_id},
+            {"$set": {"summary": summary, "processed_at": datetime.now(timezone.utc)}}
+        )
+        
+        # Generate quiz
+        quiz_questions = await ai_generator.generate_quiz(content)
+        if quiz_questions:
+            quiz = Quiz(document_id=document_id, questions=quiz_questions)
+            await db.quizzes.insert_one(quiz.dict())
+        
+        # Generate flashcards
+        flashcard_data = await ai_generator.generate_flashcards(content)
+        if flashcard_data:
+            flashcards = Flashcard(document_id=document_id, cards=flashcard_data)
+            await db.flashcards.insert_one(flashcards.dict())
+        
+        logger.info(f"Generated content for document {document_id}")
+    except Exception as e:
+        logger.error(f"Error generating content for document {document_id}: {e}")
+
+@api_router.get("/documents", response_model=List[Document])
+async def get_documents():
+    """Get all uploaded documents"""
+    try:
+        documents = await db.documents.find().to_list(100)
+        return [Document(**doc) for doc in documents]
+    except Exception as e:
+        logger.error(f"Error fetching documents: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch documents")
+
+@api_router.get("/documents/{document_id}", response_model=Document)
+async def get_document(document_id: str):
+    """Get a specific document"""
+    try:
+        document = await db.documents.find_one({"id": document_id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return Document(**document)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch document")
+
+@api_router.get("/documents/{document_id}/quiz")
+async def get_quiz(document_id: str):
+    """Get quiz for a document"""
+    try:
+        quiz = await db.quizzes.find_one({"document_id": document_id})
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        return Quiz(**quiz)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching quiz: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch quiz")
+
+@api_router.get("/documents/{document_id}/flashcards")
+async def get_flashcards(document_id: str):
+    """Get flashcards for a document"""
+    try:
+        flashcards = await db.flashcards.find_one({"document_id": document_id})
+        if not flashcards:
+            raise HTTPException(status_code=404, detail="Flashcards not found")
+        return Flashcard(**flashcards)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching flashcards: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch flashcards")
+
+@api_router.post("/chat")
+async def chat_with_document(request: ChatRequest):
+    """Chat with AI tutor about a document"""
+    try:
+        # Get document
+        document = await db.documents.find_one({"id": request.document_id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Generate response
+        response = await ai_generator.chat_with_document(document["content"], request.message)
+        
+        # Save chat message
+        chat_message = ChatMessage(
+            document_id=request.document_id,
+            message=request.message,
+            response=response
+        )
+        await db.chat_messages.insert_one(chat_message.dict())
+        
+        return {"response": response}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in chat: {e}")
+        raise HTTPException(status_code=500, detail="Chat service unavailable")
+
+@api_router.get("/documents/{document_id}/chat-history")
+async def get_chat_history(document_id: str):
+    """Get chat history for a document"""
+    try:
+        messages = await db.chat_messages.find({"document_id": document_id}).sort("timestamp", 1).to_list(100)
+        return [ChatMessage(**msg) for msg in messages]
+    except Exception as e:
+        logger.error(f"Error fetching chat history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch chat history")
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -62,13 +401,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
