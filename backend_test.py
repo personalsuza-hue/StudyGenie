@@ -60,37 +60,27 @@ class StudyGenieAPITester:
         """Test API root endpoint"""
         return self.run_test("API Root", "GET", "", 200)
 
-    def test_upload_text_as_pdf(self):
-        """Test file upload functionality with text content"""
-        # Create a simple text file that we'll upload as PDF for testing
-        test_content = """
-        This is a test document for StudyGenie application.
+    def test_upload_image(self):
+        """Test image upload functionality with OCR"""
+        # Use an existing image file for testing
+        image_path = "/app/frontend/node_modules/@jest/core/build/assets/jest_logo.png"
         
-        Key Concepts:
-        1. Artificial Intelligence - The simulation of human intelligence in machines
-        2. Machine Learning - A subset of AI that enables computers to learn without explicit programming
-        3. Natural Language Processing - AI's ability to understand and generate human language
-        4. Deep Learning - A subset of ML using neural networks with multiple layers
-        
-        Summary:
-        This document covers basic AI concepts that are fundamental to understanding modern technology.
-        Students should focus on understanding the relationships between these concepts.
-        """
-        
-        # Try uploading as text first, then as PDF if that fails
-        files = {'file': ('test_document.txt', test_content.encode(), 'text/plain')}
-        success, response = self.run_test("Upload Text File", "POST", "upload", 201, files=files)
-        
-        if not success:
-            # If text fails, try as PDF (the backend might only accept PDF/images)
-            files = {'file': ('test_document.pdf', test_content.encode(), 'application/pdf')}
-            success, response = self.run_test("Upload as PDF", "POST", "upload", 201, files=files)
-        
-        if success and isinstance(response, dict) and 'id' in response:
-            self.document_id = response['id']
-            print(f"   Document ID: {self.document_id}")
-            return True
-        return False
+        try:
+            with open(image_path, 'rb') as f:
+                image_content = f.read()
+            
+            files = {'file': ('test_image.png', image_content, 'image/png')}
+            success, response = self.run_test("Upload Image", "POST", "upload", 201, files=files)
+            
+            if success and isinstance(response, dict) and 'id' in response:
+                self.document_id = response['id']
+                print(f"   Document ID: {self.document_id}")
+                return True
+            return False
+            
+        except Exception as e:
+            print(f"   Error reading image file: {e}")
+            return False
 
     def test_get_documents(self):
         """Test getting all documents"""
