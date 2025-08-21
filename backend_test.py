@@ -195,7 +195,7 @@ def main():
     
     # Basic API tests
     test_results.append(tester.test_api_root())
-    test_results.append(tester.test_upload_pdf())
+    test_results.append(tester.test_upload_text_as_pdf())
     test_results.append(tester.test_get_documents())
     test_results.append(tester.test_get_specific_document())
     
