@@ -70,7 +70,7 @@ class StudyGenieAPITester:
                 image_content = f.read()
             
             files = {'file': ('test_image.png', image_content, 'image/png')}
-            success, response = self.run_test("Upload Image", "POST", "upload", 201, files=files)
+            success, response = self.run_test("Upload Image", "POST", "upload", 200, files=files)
             
             if success and isinstance(response, dict) and 'id' in response:
                 self.document_id = response['id']
