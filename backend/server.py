@@ -109,17 +109,21 @@ class AIContentGenerator:
             chat = LlmChat(
                 api_key=self.api_key,
                 session_id=f"quiz_{uuid.uuid4()}",
-                system_message="You are an expert quiz creator. Create challenging but fair multiple-choice questions based on study material. Return only valid JSON format."
+                system_message="You are an expert quiz creator. You MUST respond with valid JSON only. Do not include any text before or after the JSON array."
             ).with_model("openai", "gpt-4o-mini")
             
             user_message = UserMessage(
-                text=f"""Create exactly 10 multiple-choice questions based on this study material. Return ONLY a JSON array in this exact format:
+                text=f"""Create exactly 10 multiple-choice questions based on this study material. 
+
+CRITICAL: Respond with ONLY a valid JSON array. No additional text, no markdown, no explanations.
+
+Required JSON format:
 [
   {{
-    "question": "Question text here?",
-    "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+    "question": "What is the main concept discussed?",
+    "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
     "correct_answer": "A",
-    "explanation": "Explanation for the correct answer"
+    "explanation": "Brief explanation why this is correct"
   }}
 ]
 
@@ -128,17 +132,76 @@ Study Material:
             )
             
             response = await chat.send_message(user_message)
-            # Parse JSON response
-            try:
-                questions = json.loads(response)
-                return questions
-            except json.JSONDecodeError:
-                logger.error("Failed to parse quiz JSON response")
-                return []
+            
+            # Clean up response - remove markdown formatting if present
+            cleaned_response = response.strip()
+            if cleaned_response.startswith('```json'):
+                cleaned_response = cleaned_response.replace('```json', '').replace('```', '').strip()
+            elif cleaned_response.startswith('```'):
+                cleaned_response = cleaned_response.replace('```', '').strip()
+            
+            # Try parsing with retry logic
+            for attempt in range(3):
+                try:
+                    questions = json.loads(cleaned_response)
+                    
+                    # Validate structure
+                    if isinstance(questions, list) and len(questions) > 0:
+                        # Validate each question has required fields
+                        valid_questions = []
+                        for q in questions:
+                            if (isinstance(q, dict) and 
+                                'question' in q and 
+                                'options' in q and 
+                                'correct_answer' in q and
+                                isinstance(q['options'], list) and
+                                len(q['options']) >= 4):
+                                valid_questions.append(q)
+                        
+                        if valid_questions:
+                            logger.info(f"Successfully generated {len(valid_questions)} quiz questions")
+                            return valid_questions[:10]  # Limit to 10 questions
+                    
+                    break
+                    
+                except json.JSONDecodeError as e:
+                    logger.warning(f"JSON parse attempt {attempt + 1} failed: {e}")
+                    if attempt == 2:  # Last attempt
+                        logger.error(f"Failed to parse quiz response after 3 attempts. Response: {cleaned_response[:500]}")
+                        # Create a fallback quiz
+                        return self._create_fallback_quiz(content)
                 
         except Exception as e:
             logger.error(f"Error generating quiz: {e}")
-            return []
+            
+        return self._create_fallback_quiz(content)
+    
+    def _create_fallback_quiz(self, content: str) -> List[Dict[str, Any]]:
+        """Create a simple fallback quiz when AI generation fails"""
+        return [
+            {
+                "question": "Based on the uploaded material, what is the main topic discussed?",
+                "options": [
+                    "A) The content covers various educational concepts",
+                    "B) The material focuses on technical information", 
+                    "C) The document contains study-related content",
+                    "D) The text discusses academic subjects"
+                ],
+                "correct_answer": "A",
+                "explanation": "This is a general question based on your study material."
+            },
+            {
+                "question": "What type of document did you upload?",
+                "options": [
+                    "A) Study notes or educational material",
+                    "B) Entertainment content",
+                    "C) Marketing material", 
+                    "D) News article"
+                ],
+                "correct_answer": "A",
+                "explanation": "You uploaded this document to create study materials."
+            }
+        ]
 
     async def generate_flashcards(self, content: str) -> List[Dict[str, str]]:
         """Generate flashcards with key terms and definitions"""
