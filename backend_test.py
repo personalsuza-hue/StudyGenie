@@ -406,8 +406,8 @@ class StudyGenieAPITester:
         return success1 and success2
 
 def main():
-    print("🚀 Starting StudyGenie API Tests")
-    print("=" * 50)
+    print("🚀 Starting StudyGenie API Tests with Google OAuth Authentication")
+    print("=" * 70)
     
     tester = StudyGenieAPITester()
     
@@ -416,29 +416,75 @@ def main():
     
     # Basic API tests
     test_results.append(tester.test_api_root())
+    
+    # Authentication tests (without valid token)
+    print("\n" + "=" * 50)
+    print("🔐 AUTHENTICATION TESTS")
+    print("=" * 50)
+    
+    test_results.append(tester.test_google_auth_invalid_token())
+    test_results.append(tester.test_google_auth_missing_token())
+    test_results.append(tester.test_auth_me_without_token())
+    test_results.append(tester.test_logout_endpoint())
+    
+    # Test protected routes without authentication
+    test_results.append(tester.test_protected_routes_without_auth())
+    
+    # Simulate authentication for subsequent tests
+    print("\n" + "=" * 50)
+    print("🔑 AUTHENTICATION SIMULATION")
+    print("=" * 50)
+    
+    auth_success = tester.simulate_google_auth()
+    if not auth_success:
+        print("❌ Authentication simulation failed. Skipping authenticated tests.")
+        return 1
+    
+    # Test authenticated endpoints
+    print("\n" + "=" * 50)
+    print("🔒 AUTHENTICATED ENDPOINT TESTS")
+    print("=" * 50)
+    
+    test_results.append(tester.test_auth_me_with_token())
     test_results.append(tester.test_upload_image())
     test_results.append(tester.test_get_documents())
     test_results.append(tester.test_get_specific_document())
+    test_results.append(tester.test_user_data_isolation())
     
     # AI content generation tests (these might take time)
+    print("\n" + "=" * 50)
+    print("🤖 AI CONTENT GENERATION TESTS")
+    print("=" * 50)
+    
     test_results.append(tester.test_get_quiz())
     test_results.append(tester.test_get_flashcards())
     test_results.append(tester.test_chat_functionality())
     test_results.append(tester.test_get_chat_history())
     
-    # Error handling tests
+    # Security and error handling tests
+    print("\n" + "=" * 50)
+    print("🛡️ SECURITY & ERROR HANDLING TESTS")
+    print("=" * 50)
+    
+    test_results.append(tester.test_jwt_token_validation())
     test_results.append(tester.test_error_handling())
     
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 70)
     print("📊 TEST RESULTS SUMMARY")
-    print("=" * 50)
+    print("=" * 70)
     print(f"Tests Run: {tester.tests_run}")
     print(f"Tests Passed: {tester.tests_passed}")
     print(f"Success Rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     
     if tester.document_id:
         print(f"Test Document ID: {tester.document_id}")
+    
+    if tester.user_data:
+        print(f"Test User: {tester.user_data['name']} ({tester.user_data['email']})")
+    
+    print(f"\nBackend URL: {tester.base_url}")
+    print(f"API URL: {tester.api_url}")
     
     # Return appropriate exit code
     return 0 if tester.tests_passed == tester.tests_run else 1
