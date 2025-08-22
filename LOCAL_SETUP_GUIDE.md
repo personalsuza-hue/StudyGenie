@@ -407,47 +407,59 @@ npm install
    - For macOS: `brew install tesseract`
    - For Linux: `sudo apt-get install tesseract-ocr`
 
-## Google OAuth Setup Verification
-
-To ensure Google OAuth is properly configured:
-
-1. **Google Cloud Console Setup:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com)
-   - Navigate to "APIs & Services" → "Credentials"
-   - Find your OAuth 2.0 Client ID
-   - Ensure these URLs are in "Authorized redirect URIs":
-     - `http://localhost:8001/api/auth/google/callback`
-   - Ensure these URLs are in "Authorized JavaScript origins":
-     - `http://localhost:3000`
-     - `http://localhost:8001`
-
-2. **Test Authentication:**
-   - Start both backend and frontend servers
-   - Go to `http://localhost:3000`
-   - Click "Login with Google"
-   - Should redirect to Google login page
-   - After successful login, should redirect back to your app
-
 ## Project Structure
 
 ```
 studygenie/
-├── backend/
-│   ├── server.py          # FastAPI main application
-│   ├── requirements.txt   # Python dependencies
-│   ├── .env              # Backend environment variables
-│   └── venv/             # Python virtual environment
-├── frontend/
+├── backend/                    # FastAPI Python backend
+│   ├── server.py              # Main FastAPI application
+│   ├── auth.py               # Authentication logic
+│   ├── requirements.txt      # Python dependencies
+│   ├── .env                 # Backend environment variables
+│   └── venv/                # Python virtual environment
+├── frontend/                  # React frontend application
 │   ├── src/
-│   │   ├── App.js        # Main React component
-│   │   ├── components/   # UI components
-│   │   └── ...
-│   ├── package.json      # Node.js dependencies
-│   ├── .env             # Frontend environment variables
-│   └── node_modules/    # Node.js modules
-├── LOCAL_SETUP_GUIDE.md # This file
-└── README.md            # Project documentation
+│   │   ├── App.js           # Main React component
+│   │   ├── components/      # UI components
+│   │   │   ├── auth/        # Authentication components
+│   │   │   └── ui/          # Reusable UI components
+│   │   ├── contexts/        # React contexts (Auth)
+│   │   └── hooks/           # Custom React hooks
+│   ├── public/              # Static files
+│   ├── package.json         # Node.js dependencies
+│   ├── .env                # Frontend environment variables
+│   └── node_modules/       # Node.js packages
+├── .vscode/                   # VS Code configuration (optional)
+│   ├── settings.json        # Workspace settings
+│   ├── launch.json          # Debug configuration
+│   └── tasks.json           # VS Code tasks
+├── LOCAL_SETUP_GUIDE.md     # This setup guide
+└── README.md               # Project documentation
 ```
+
+## Features Overview
+
+### Authentication
+- **Google OAuth 2.0** integration for secure login
+- **JWT token-based** session management
+- **Protected routes** ensuring user privacy
+
+### File Processing
+- **PDF text extraction** using PyPDF2
+- **Image OCR** using Tesseract for text recognition
+- **Multiple file format** support
+
+### AI-Powered Features
+- **Document summarization** using advanced LLM
+- **Interactive quiz generation** with multiple-choice questions
+- **Flashcard creation** for key terms and concepts
+- **AI tutor chat** for questions about uploaded content
+
+### Technical Features
+- **User-specific data isolation** - each user only sees their own documents
+- **Real-time processing** with background task execution
+- **Modern UI/UX** with Tailwind CSS and shadcn/ui components
+- **Responsive design** for desktop and mobile
 
 ## Additional Resources
 
