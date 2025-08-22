@@ -68,7 +68,9 @@ code .
 # Or open VS Code and use File > Open Folder to select your studygenie directory
 ```
 
-### 2. Backend Setup
+### Step 3: Backend Setup
+
+Open VS Code integrated terminal (Terminal → New Terminal) and run:
 
 ```bash
 # Navigate to backend directory
@@ -83,12 +85,17 @@ venv\Scripts\activate
 # On macOS/Linux:
 source venv/bin/activate
 
-# Install dependencies
+# Install all dependencies
 pip install -r requirements.txt
-
-# Install additional dependencies for Google OAuth
-pip install google-auth google-auth-oauthlib google-auth-httplib2
 ```
+
+**Note:** The requirements.txt includes all necessary packages including:
+- FastAPI and Uvicorn for the web server
+- Google authentication libraries
+- MongoDB drivers (PyMongo, Motor)
+- AI integration libraries (emergentintegrations)
+- File processing libraries (PyPDF2, pytesseract, Pillow)
+- JWT authentication libraries
 
 ### 3. Frontend Setup
 
