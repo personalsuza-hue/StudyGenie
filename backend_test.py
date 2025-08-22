@@ -4,14 +4,21 @@ import time
 import json
 import io
 from datetime import datetime
+import os
 
 class StudyGenieAPITester:
-    def __init__(self, base_url="https://auth-clone-guide.preview.emergentagent.com"):
+    def __init__(self, base_url=None):
+        # Use environment variable or default to localhost
+        if base_url is None:
+            base_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+        
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
         self.tests_passed = 0
         self.document_id = None
+        self.access_token = None
+        self.user_data = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
         """Run a single API test"""
