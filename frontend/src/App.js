@@ -4,7 +4,7 @@ import axios from 'axios';
 import './App.css';
 
 // Context
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Auth Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
