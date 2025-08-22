@@ -531,11 +531,18 @@ async def chat_with_document(request: ChatRequest, current_user: User = Depends(
         raise HTTPException(status_code=500, detail="Chat service unavailable")
 
 @api_router.get("/documents/{document_id}/chat-history")
-async def get_chat_history(document_id: str):
-    """Get chat history for a document"""
+async def get_chat_history(document_id: str, current_user: User = Depends(get_current_user)):
+    """Get chat history for a document owned by current user"""
     try:
+        # Verify document ownership
+        document = await db.documents.find_one({"id": document_id, "user_id": current_user.id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+            
         messages = await db.chat_messages.find({"document_id": document_id}).sort("timestamp", 1).to_list(100)
         return [ChatMessage(**msg) for msg in messages]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching chat history: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch chat history")
