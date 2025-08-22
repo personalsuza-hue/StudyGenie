@@ -54,9 +54,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Authentication Models
+class GoogleTokenRequest(BaseModel):
+    token: str
+
+class LoginResponse(BaseModel):
+    user: User
+    access_token: str
+    token_type: str = "bearer"
+
 # Pydantic Models
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Add user_id to associate documents with users
     filename: str
     file_type: str
     content: str
