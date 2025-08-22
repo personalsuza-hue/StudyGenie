@@ -441,10 +441,10 @@ async def generate_content_for_document(document_id: str, content: str):
         logger.error(f"Error generating content for document {document_id}: {e}")
 
 @api_router.get("/documents", response_model=List[Document])
-async def get_documents():
-    """Get all uploaded documents"""
+async def get_documents(current_user: User = Depends(get_current_user)):
+    """Get all uploaded documents for the current user"""
     try:
-        documents = await db.documents.find().to_list(100)
+        documents = await db.documents.find({"user_id": current_user.id}).to_list(100)
         return [Document(**doc) for doc in documents]
     except Exception as e:
         logger.error(f"Error fetching documents: {e}")
