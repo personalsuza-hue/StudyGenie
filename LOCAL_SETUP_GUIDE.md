@@ -461,20 +461,86 @@ studygenie/
 - **Modern UI/UX** with Tailwind CSS and shadcn/ui components
 - **Responsive design** for desktop and mobile
 
-## Additional Resources
+## API Endpoints Reference
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [React Documentation](https://reactjs.org/)
-- [MongoDB Documentation](https://docs.mongodb.com/)
-- [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
+Once your backend is running, you can access the interactive API documentation at:
+- **Swagger UI:** `http://localhost:8001/docs`
+- **ReDoc:** `http://localhost:8001/redoc`
 
-## Support
+### Main API Endpoints:
+- `POST /api/auth/google` - Google OAuth authentication
+- `GET /api/auth/me` - Get current user info
+- `POST /api/auth/logout` - Logout user
+- `POST /api/upload` - Upload and process documents
+- `GET /api/documents` - Get user's documents
+- `GET /api/documents/{id}/quiz` - Get generated quiz
+- `GET /api/documents/{id}/flashcards` - Get generated flashcards
+- `POST /api/chat` - Chat with AI tutor
 
-If you encounter any issues:
-1. Check the terminal output for error messages
-2. Verify all environment variables are set correctly
-3. Ensure MongoDB is running and accessible
-4. Check Google Cloud Console for OAuth configuration
-5. Test API endpoints using `http://localhost:8001/docs`
+## Environment Variables Reference
+
+### Required Backend Variables (`backend/.env`):
+```env
+MONGO_URL=                    # MongoDB Atlas connection string
+DB_NAME=studygenie_db        # Database name
+CORS_ORIGINS=                # Allowed frontend origins
+GOOGLE_CLIENT_ID=            # Google OAuth client ID
+GOOGLE_CLIENT_SECRET=        # Google OAuth client secret
+JWT_SECRET=                  # Secret for JWT token signing
+EMERGENT_LLM_KEY=           # LLM API key for AI features
+```
+
+### Required Frontend Variables (`frontend/.env`):
+```env
+REACT_APP_BACKEND_URL=       # Backend URL (http://localhost:8001)
+REACT_APP_GOOGLE_CLIENT_ID=  # Google OAuth client ID (same as backend)
+```
+
+## Additional Resources and Documentation
+
+### Official Documentation
+- [FastAPI Documentation](https://fastapi.tiangolo.com/) - Backend framework
+- [React Documentation](https://reactjs.org/) - Frontend framework  
+- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/) - Cloud database
+- [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2) - Authentication
+- [Tailwind CSS Documentation](https://tailwindcss.com/) - Styling framework
+
+### Development Tools
+- [Thunder Client](https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client) - API testing in VS Code
+- [MongoDB Compass](https://www.mongodb.com/products/compass) - GUI for MongoDB
+- [React Developer Tools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi) - Browser extension
+
+## Support and Troubleshooting
+
+If you encounter issues:
+
+1. **Check terminal output** for error messages
+2. **Verify all environment variables** are set correctly
+3. **Ensure MongoDB Atlas** is accessible and configured
+4. **Check Google Cloud Console** for OAuth configuration
+5. **Test API endpoints** using the Swagger UI at `http://localhost:8001/docs`
+6. **Check browser console** for frontend errors (F12)
+7. **Verify file permissions** for uploaded documents
+
+### Getting Help
+- Check this guide thoroughly first
+- Look at error messages in terminal/console
+- Test individual components (backend API, frontend, database connection)
+- Verify all prerequisites are installed correctly
+
+## Next Steps After Setup
+
+Once you have the application running:
+
+1. **Test the authentication flow** with Google login
+2. **Upload a sample PDF or image** to test file processing  
+3. **Try all features** - Summary, Quiz, Flashcards, AI Tutor
+4. **Explore the code structure** to understand the architecture
+5. **Make your modifications** and see them in real-time with hot reload
+6. **Use the API documentation** to understand available endpoints
 
 Happy coding! 🚀
+
+---
+
+*Last updated: January 2025 - This guide is specifically optimized for VS Code development with MongoDB Atlas*
