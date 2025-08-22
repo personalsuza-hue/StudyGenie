@@ -34,25 +34,38 @@ Before starting, make sure you have the following installed on your machine:
    - Get your connection string
 
 ### Recommended VS Code Extensions
-- Python
-- JavaScript (ES6) code snippets
-- MongoDB for VS Code
-- Thunder Client (for API testing)
-- GitLens
+- **Python** - Python language support
+- **JavaScript (ES6) code snippets** - Enhanced JavaScript support
+- **Thunder Client** or **REST Client** - For API testing
+- **GitLens** - Enhanced Git integration
+- **Prettier - Code formatter** - Code formatting
+- **ES7+ React/Redux/React-Native snippets** - React development
+- **Auto Rename Tag** - HTML/JSX tag renaming
+- **Bracket Pair Colorizer 2** - Color matching brackets
+- **MongoDB for VS Code** (Optional) - MongoDB database management
 
-## Installation Steps
+## Step-by-Step Installation
 
-### 1. Clone the Repository
+### Step 1: Clone or Set Up the Project
 
+**Option A: If you have the project repository:**
 ```bash
-# Clone from your repository
 git clone <your-repository-url>
 cd studygenie
+```
 
-# Or copy the project files to a new directory
+**Option B: If you're copying files manually:**
+```bash
 mkdir studygenie
 cd studygenie
-# Copy all files from the current project
+# Copy all your project files here
+```
+
+### Step 2: Open Project in VS Code
+```bash
+# Open the project in VS Code
+code .
+# Or open VS Code and use File > Open Folder to select your studygenie directory
 ```
 
 ### 2. Backend Setup
