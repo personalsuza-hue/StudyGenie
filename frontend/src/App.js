@@ -3,6 +3,12 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
 
+// Context
+import { AuthProvider } from './contexts/AuthContext';
+
+// Auth Components
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
 // Components
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
@@ -17,7 +23,7 @@ import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
 
 // Icons
-import { Upload, FileText, MessageCircle, Brain, BookOpen, Lightbulb, CheckCircle, Clock, Trophy, Target } from 'lucide-react';
+import { Upload, FileText, MessageCircle, Brain, BookOpen, Lightbulb, CheckCircle, Clock, Trophy, Target, LogOut, User } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
