@@ -80,6 +80,117 @@ class StudyGenieAPITester:
         """Test API root endpoint"""
         return self.run_test("API Root", "GET", "", 200)
 
+    def test_google_auth_invalid_token(self):
+        """Test Google OAuth with invalid token"""
+        invalid_token_data = {"token": "invalid_google_token_12345"}
+        success, response = self.run_test("Google Auth - Invalid Token", "POST", "auth/google", 401, data=invalid_token_data)
+        return success
+
+    def test_google_auth_missing_token(self):
+        """Test Google OAuth with missing token"""
+        success, response = self.run_test("Google Auth - Missing Token", "POST", "auth/google", 422, data={})
+        return success
+
+    def test_auth_me_without_token(self):
+        """Test /auth/me endpoint without authentication"""
+        success, response = self.run_test("Auth Me - No Token", "GET", "auth/me", 401)
+        return success
+
+    def test_logout_endpoint(self):
+        """Test logout endpoint"""
+        success, response = self.run_test("Logout", "POST", "auth/logout", 200)
+        return success
+
+    def test_protected_routes_without_auth(self):
+        """Test that protected routes return 401 without authentication"""
+        print("\n🔒 Testing Protected Routes Without Authentication...")
+        
+        results = []
+        
+        # Test upload without auth
+        test_data = {"test": "data"}
+        success1, _ = self.run_test("Upload - No Auth", "POST", "upload", 401, data=test_data)
+        results.append(success1)
+        
+        # Test get documents without auth
+        success2, _ = self.run_test("Get Documents - No Auth", "GET", "documents", 401)
+        results.append(success2)
+        
+        # Test get specific document without auth
+        success3, _ = self.run_test("Get Document - No Auth", "GET", "documents/test-id", 401)
+        results.append(success3)
+        
+        # Test quiz without auth
+        success4, _ = self.run_test("Get Quiz - No Auth", "GET", "documents/test-id/quiz", 401)
+        results.append(success4)
+        
+        # Test flashcards without auth
+        success5, _ = self.run_test("Get Flashcards - No Auth", "GET", "documents/test-id/flashcards", 401)
+        results.append(success5)
+        
+        # Test chat without auth
+        chat_data = {"document_id": "test-id", "message": "test"}
+        success6, _ = self.run_test("Chat - No Auth", "POST", "chat", 401, data=chat_data)
+        results.append(success6)
+        
+        # Test chat history without auth
+        success7, _ = self.run_test("Chat History - No Auth", "GET", "documents/test-id/chat-history", 401)
+        results.append(success7)
+        
+        return all(results)
+
+    def simulate_google_auth(self):
+        """Simulate Google authentication by creating a mock JWT token"""
+        print("\n🔐 Simulating Google Authentication...")
+        
+        # For testing purposes, we'll create a mock user and token
+        # In a real scenario, this would involve actual Google OAuth flow
+        
+        # Create a test user directly in the database simulation
+        import jwt
+        from datetime import datetime, timedelta
+        
+        # Mock JWT token (this is for testing only)
+        mock_user_data = {
+            "user_id": "test_user_123",
+            "email": "testuser@studygenie.com",
+            "exp": datetime.utcnow() + timedelta(hours=24)
+        }
+        
+        # Use the same secret as in the backend
+        jwt_secret = "your-super-secret-jwt-key-change-this-in-production-make-it-very-long-and-random"
+        
+        try:
+            mock_token = jwt.encode(mock_user_data, jwt_secret, algorithm="HS256")
+            self.access_token = mock_token
+            self.user_data = {
+                "id": "test_user_123",
+                "email": "testuser@studygenie.com",
+                "name": "Test User",
+                "picture": "https://example.com/avatar.jpg"
+            }
+            print("✅ Mock authentication successful")
+            print(f"   User: {self.user_data['name']} ({self.user_data['email']})")
+            return True
+        except Exception as e:
+            print(f"❌ Mock authentication failed: {e}")
+            return False
+
+    def test_auth_me_with_token(self):
+        """Test /auth/me endpoint with valid token"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+        
+        success, response = self.run_test("Auth Me - With Token", "GET", "auth/me", 200)
+        
+        if success and isinstance(response, dict):
+            print(f"   User ID: {response.get('id', 'N/A')}")
+            print(f"   Email: {response.get('email', 'N/A')}")
+            print(f"   Name: {response.get('name', 'N/A')}")
+        
+        return success
+
     def test_upload_image(self):
         """Test image upload functionality with OCR"""
         # Use an existing image file for testing
