@@ -503,11 +503,11 @@ async def get_flashcards(document_id: str, current_user: User = Depends(get_curr
         raise HTTPException(status_code=500, detail="Failed to fetch flashcards")
 
 @api_router.post("/chat")
-async def chat_with_document(request: ChatRequest):
-    """Chat with AI tutor about a document"""
+async def chat_with_document(request: ChatRequest, current_user: User = Depends(get_current_user)):
+    """Chat with AI tutor about a document owned by current user"""
     try:
-        # Get document
-        document = await db.documents.find_one({"id": request.document_id})
+        # Verify document ownership
+        document = await db.documents.find_one({"id": request.document_id, "user_id": current_user.id})
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         
