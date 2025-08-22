@@ -273,22 +273,17 @@ Then use `Ctrl+Shift+P` → "Tasks: Run Task" to start either service.
 
 ## Accessing the Application
 
-1. Open your browser and go to `http://localhost:3000`
-2. You should see the StudyGenie interface
-3. Click on "Login with Google" to authenticate
-4. Upload a PDF or image file to test the AI features
+1. **Open your browser** and go to `http://localhost:3000`
+2. **You should see the StudyGenie login page**
+3. **Click "Continue with Google"** to authenticate
+4. **Upload a PDF or image file** to test the AI features
+5. **Explore the features:** Summary, Quiz, Flashcards, and AI Tutor
 
-## Development Workflow
+## VS Code Development Tips
 
-### Using VS Code
+### Workspace Configuration
 
-1. Open VS Code in the project root directory
-2. Use the integrated terminal (Terminal → New Terminal)
-3. You can split terminals to run both backend and frontend simultaneously
-
-### Recommended VS Code Workspace Setup
-
-Create a `.vscode/settings.json` file:
+Create `.vscode/settings.json` in your project root:
 
 ```json
 {
@@ -297,23 +292,46 @@ Create a `.vscode/settings.json` file:
     "files.exclude": {
         "**/node_modules": true,
         "**/__pycache__": true,
-        "**/venv": true
+        "**/venv": true,
+        "**/.git": true
+    },
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
     }
 }
 ```
 
-### Debugging
+### Launch Configuration for Debugging
 
-#### Backend Debugging
-1. Set breakpoints in Python files
-2. Use VS Code's Python debugger
-3. Check logs in terminal
-4. Use API testing tools (Thunder Client, Postman)
+Create `.vscode/launch.json`:
 
-#### Frontend Debugging
-1. Use browser Developer Tools (F12)
-2. Check React Developer Tools extension
-3. Console logs will appear in terminal and browser
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: FastAPI",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/venv/bin/uvicorn",
+            "args": ["server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/backend/.env"
+        }
+    ]
+}
+```
+
+### Development Workflow
+
+1. **Use integrated terminal:** View → Terminal
+2. **Split terminals:** Run backend and frontend simultaneously
+3. **Use debugger:** Set breakpoints in Python files and use F5 to debug
+4. **Hot reload:** Both backend and frontend have hot reload enabled
+5. **API testing:** Use Thunder Client extension to test API endpoints at `http://localhost:8001/docs`
 
 ## Common Issues and Solutions
 
