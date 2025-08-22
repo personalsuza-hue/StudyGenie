@@ -97,47 +97,76 @@ pip install -r requirements.txt
 - File processing libraries (PyPDF2, pytesseract, Pillow)
 - JWT authentication libraries
 
-### 3. Frontend Setup
+### Step 4: Frontend Setup
+
+Open a new terminal in VS Code (Terminal → New Terminal):
 
 ```bash
-# Navigate to frontend directory (from root)
+# Navigate to frontend directory (from project root)
 cd frontend
 
 # Install dependencies using Yarn (recommended)
 yarn install
 
-# If you don't have Yarn, install it first:
+# If you don't have Yarn installed:
 npm install -g yarn
 # Then run: yarn install
 
-# Or use npm (though yarn is recommended):
+# Alternative: Use npm (though yarn is recommended for this project)
 # npm install
 ```
 
-### 4. Environment Configuration
+### Step 5: MongoDB Atlas Configuration
+
+1. **Create MongoDB Atlas Account:**
+   - Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
+   - Sign up for a free account
+   - Create a new cluster (free tier M0 is sufficient for development)
+
+2. **Get Connection String:**
+   - Click "Connect" on your cluster
+   - Choose "Connect your application"
+   - Copy the connection string (it looks like: `mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/`)
+
+3. **Configure Database Access:**
+   - Go to "Database Access" in the Atlas dashboard
+   - Add a new database user with read and write permissions
+   - Note the username and password
+
+4. **Configure Network Access:**
+   - Go to "Network Access" in the Atlas dashboard
+   - Add your IP address (or 0.0.0.0/0 for development - not recommended for production)
+
+### Step 6: Environment Configuration
 
 #### Backend Environment (.env)
-Create or update `backend/.env`:
+Create or update `backend/.env` file in VS Code:
 
 ```env
-# Database Configuration
-MONGO_URL=mongodb://localhost:27017
+# MongoDB Atlas Configuration
+MONGO_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/studygenie_db?retryWrites=true&w=majority
 DB_NAME=studygenie_db
 
 # CORS Configuration  
 CORS_ORIGINS=http://localhost:3000
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID=92975282494-o9l8lqlgjbl35v0ssc2hb69ts8reqnnt.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+# You need to get these from Google Cloud Console
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # JWT Secret (generate a secure secret)
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-make-it-very-long-and-random
 
-# LLM Configuration (keep existing)
-EMERGENT_LLM_KEY=sk-emergent-874Fa11661817D1EeC
-OPENAI_API_KEY=sk-emergent-874Fa11661817D1EeC
+# LLM Configuration 
+EMERGENT_LLM_KEY=your-emergent-llm-key
+OPENAI_API_KEY=your-openai-api-key-or-emergent-key
 ```
+
+**Important Notes:**
+- Replace `<username>`, `<password>`, and cluster URL with your actual MongoDB Atlas credentials
+- The database name `studygenie_db` will be automatically created when you first run the application
+- Replace the Google OAuth credentials with your own (see Google OAuth setup below)
 
 #### Frontend Environment (.env)
 Create or update `frontend/.env`:
