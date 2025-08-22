@@ -5,8 +5,8 @@ This script verifies the Google OAuth setup and identifies potential issues.
 """
 
 import os
-import asyncio
-import httpx
+import urllib.request
+import urllib.error
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -25,7 +25,7 @@ class Colors:
 def print_colored(text, color):
     print(f"{color}{text}{Colors.ENDC}")
 
-async def test_google_oauth_config():
+def test_google_oauth_config():
     """Test Google OAuth configuration"""
     print_colored("🔍 Testing Google OAuth Configuration", Colors.HEADER)
     print("=" * 60)
@@ -48,6 +48,7 @@ async def test_google_oauth_config():
         issues_found.append("Invalid GOOGLE_CLIENT_ID format")
     else:
         print_colored("✅ GOOGLE_CLIENT_ID found and format looks correct", Colors.OKGREEN)
+        print(f"   Client ID: {google_client_id}")
     
     # 2. Check Google Client Secret
     if not google_client_secret:
@@ -60,6 +61,7 @@ async def test_google_oauth_config():
         issues_found.append("Invalid GOOGLE_CLIENT_SECRET format")
     else:
         print_colored("✅ GOOGLE_CLIENT_SECRET found and format looks correct", Colors.OKGREEN)
+        print(f"   Secret: {google_client_secret[:15]}...")
     
     # 3. Check JWT Secret
     if not jwt_secret or jwt_secret == "your-super-secret-jwt-key-change-this-in-production-make-it-very-long-and-random":
@@ -71,19 +73,24 @@ async def test_google_oauth_config():
         issues_found.append("JWT_SECRET too short")
     else:
         print_colored("✅ JWT_SECRET looks secure", Colors.OKGREEN)
+        print(f"   Length: {len(jwt_secret)} characters")
     
     # 4. Test Google tokeninfo endpoint accessibility
     print_colored("\n🌐 Testing Google OAuth endpoint accessibility...", Colors.OKBLUE)
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            # Test with a dummy token to see if endpoint is accessible
-            response = await client.get("https://oauth2.googleapis.com/tokeninfo?id_token=dummy")
-            
-            # We expect this to fail with 400 (invalid token), but not network errors
-            if response.status_code == 400:
+        # Test with a dummy token to see if endpoint is accessible
+        url = "https://oauth2.googleapis.com/tokeninfo?id_token=dummy"
+        req = urllib.request.Request(url)
+        
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                # We don't expect this to succeed, just testing connectivity
+                pass
+        except urllib.error.HTTPError as e:
+            if e.code == 400:
                 print_colored("✅ Google OAuth tokeninfo endpoint is accessible", Colors.OKGREEN)
             else:
-                print_colored(f"⚠️  Unexpected response from Google: {response.status_code}", Colors.WARNING)
+                print_colored(f"⚠️  Unexpected response from Google: HTTP {e.code}", Colors.WARNING)
                 
     except Exception as e:
         print_colored(f"❌ Cannot reach Google OAuth endpoint: {e}", Colors.FAIL)
@@ -115,7 +122,13 @@ async def test_google_oauth_config():
         print_colored("⚠️  Frontend .env file not found", Colors.WARNING)
         issues_found.append("Missing frontend .env file")
     
-    # 6. Print Google Cloud Console setup instructions
+    # 6. Check cookie security settings
+    print_colored("\n🍪 Checking cookie security configuration...", Colors.OKBLUE)
+    print_colored("⚠️  Note: secure=True in cookie settings requires HTTPS", Colors.WARNING)
+    print("   For local development (HTTP), this might cause issues")
+    print("   Consider setting secure=False for localhost testing")
+    
+    # 7. Print Google Cloud Console setup instructions
     print_colored("\n🔧 Google Cloud Console Configuration Checklist:", Colors.HEADER)
     print("For your Google OAuth to work with localhost, ensure:")
     print("1. Go to https://console.cloud.google.com")
@@ -124,9 +137,19 @@ async def test_google_oauth_config():
     print("4. In 'Authorized JavaScript origins', add:")
     print("   - http://localhost:3000")
     print("   - http://localhost:8001")
-    print("5. In 'Authorized redirect URIs', add:")
-    print("   - http://localhost:8001/api/auth/google/callback")
-    print("6. Save the configuration")
+    print("5. In 'Authorized redirect URIs', you may need:")
+    print("   - http://localhost:8001/api/auth/google/callback (if using server-side flow)")
+    print("6. Enable Google Identity Services API if not already enabled")
+    print("7. Save the configuration")
+    
+    # 8. Check for known issues
+    print_colored("\n⚠️  Known Issues and Solutions:", Colors.WARNING)
+    print("1. 'Cookie secure=True' issue:")
+    print("   - For localhost, set secure=False in backend/server.py line ~344")
+    print("2. CORS issues:")
+    print("   - Ensure CORS_ORIGINS includes http://localhost:3000")
+    print("3. Google Identity Services not loading:")
+    print("   - Check browser console for CSP or network errors")
     
     # Summary
     print_colored(f"\n📊 Google OAuth Configuration Test Results:", Colors.HEADER)
@@ -134,9 +157,10 @@ async def test_google_oauth_config():
         print_colored("🎉 All Google OAuth configurations look good!", Colors.OKGREEN)
         print_colored("\n📋 Next steps:", Colors.OKBLUE)
         print("1. Ensure your Google Cloud Console is configured (see checklist above)")
-        print("2. Start the backend server: cd backend && uvicorn server:app --reload")
-        print("3. Start the frontend: cd frontend && yarn start")
-        print("4. Test login at http://localhost:3000")
+        print("2. Consider setting secure=False for local development cookies")
+        print("3. Start the backend server: cd backend && uvicorn server:app --reload")
+        print("4. Start the frontend: cd frontend && yarn start")
+        print("5. Test login at http://localhost:3000")
     else:
         print_colored(f"⚠️  Found {len(issues_found)} issue(s):", Colors.WARNING)
         for i, issue in enumerate(issues_found, 1):
@@ -156,7 +180,7 @@ async def test_google_oauth_config():
             print("  Update JWT_SECRET in backend/.env")
 
 def main():
-    asyncio.run(test_google_oauth_config())
+    test_google_oauth_config()
 
 if __name__ == "__main__":
     main()
