@@ -451,10 +451,10 @@ async def get_documents(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Failed to fetch documents")
 
 @api_router.get("/documents/{document_id}", response_model=Document)
-async def get_document(document_id: str):
-    """Get a specific document"""
+async def get_document(document_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific document for the current user"""
     try:
-        document = await db.documents.find_one({"id": document_id})
+        document = await db.documents.find_one({"id": document_id, "user_id": current_user.id})
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         return Document(**document)
