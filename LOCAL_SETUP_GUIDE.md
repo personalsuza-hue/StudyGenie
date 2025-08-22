@@ -169,54 +169,107 @@ OPENAI_API_KEY=your-openai-api-key-or-emergent-key
 - Replace the Google OAuth credentials with your own (see Google OAuth setup below)
 
 #### Frontend Environment (.env)
-Create or update `frontend/.env`:
+Create or update `frontend/.env` file in VS Code:
 
 ```env
-# Backend API URL
+# Backend API URL (for local development)
 REACT_APP_BACKEND_URL=http://localhost:8001
 
-# Google OAuth Client ID (for frontend)
-REACT_APP_GOOGLE_CLIENT_ID=92975282494-o9l8lqlgjbl35v0ssc2hb69ts8reqnnt.apps.googleusercontent.com
+# Google OAuth Client ID (same as in backend, used for frontend authentication)
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
-### 5. Database Setup
+### Step 7: Google OAuth Setup
 
-Make sure MongoDB is running:
+To enable Google authentication, you need to set up Google OAuth credentials:
 
-```bash
-# If using local MongoDB installation:
-mongod
+1. **Go to Google Cloud Console:**
+   - Visit [Google Cloud Console](https://console.cloud.google.com)
+   - Create a new project or select existing one
 
-# If using Docker:
-docker start studygenie-mongo
+2. **Enable Google+ API:**
+   - Go to "APIs & Services" → "Library"
+   - Search for "Google+ API" and enable it
 
-# Verify MongoDB is running (should connect without errors):
-mongosh mongodb://localhost:27017
-```
+3. **Create OAuth Credentials:**
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth client ID"
+   - Choose "Web application"
+   - Add these URLs to "Authorized redirect URIs":
+     - `http://localhost:8001/api/auth/google/callback`
+   - Add these URLs to "Authorized JavaScript origins":
+     - `http://localhost:3000`
+     - `http://localhost:8001`
+
+4. **Copy Credentials:**
+   - Copy the "Client ID" and "Client Secret"
+   - Update both `backend/.env` and `frontend/.env` files with these values
 
 ## Running the Application
 
-### 1. Start Backend Server
+### Method 1: Using VS Code Integrated Terminal (Recommended)
 
-```bash
-# From backend directory with activated virtual environment
-cd backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+1. **Open VS Code in your project directory**
+2. **Split Terminal:** Click the split terminal button in VS Code or use `Ctrl+Shift+5`
+3. **Run Backend (Terminal 1):**
+   ```bash
+   cd backend
+   # Activate virtual environment if not already active
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+   ```
+
+4. **Run Frontend (Terminal 2):**
+   ```bash
+   cd frontend
+   yarn start
+   # or: npm start
+   ```
+
+### Method 2: Using VS Code Tasks (Advanced)
+
+Create `.vscode/tasks.json` in your project root:
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Backend",
+            "type": "shell",
+            "command": "uvicorn",
+            "args": ["server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Frontend",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["start"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            }
+        }
+    ]
+}
 ```
 
-The backend will be available at: `http://localhost:8001`
-API docs will be available at: `http://localhost:8001/docs`
-
-### 2. Start Frontend Server
-
-```bash
-# From frontend directory (in a new terminal)
-cd frontend
-yarn start
-# or: npm start
-```
-
-The frontend will be available at: `http://localhost:3000`
+Then use `Ctrl+Shift+P` → "Tasks: Run Task" to start either service.
 
 ## Accessing the Application
 
