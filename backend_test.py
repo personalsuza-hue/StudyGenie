@@ -20,12 +20,22 @@ class StudyGenieAPITester:
         self.access_token = None
         self.user_data = None
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, files=None, headers=None):
         """Run a single API test"""
         url = f"{self.api_url}/{endpoint}" if endpoint else f"{self.api_url}/"
-        headers = {}
+        
+        # Default headers
+        test_headers = {}
         if data and not files:
-            headers['Content-Type'] = 'application/json'
+            test_headers['Content-Type'] = 'application/json'
+        
+        # Add authentication header if we have a token
+        if self.access_token:
+            test_headers['Authorization'] = f'Bearer {self.access_token}'
+        
+        # Override with custom headers if provided
+        if headers:
+            test_headers.update(headers)
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
@@ -33,12 +43,15 @@ class StudyGenieAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=test_headers)
             elif method == 'POST':
                 if files:
-                    response = requests.post(url, files=files, data=data)
+                    # Remove Content-Type for file uploads
+                    if 'Content-Type' in test_headers:
+                        del test_headers['Content-Type']
+                    response = requests.post(url, files=files, data=data, headers=test_headers)
                 else:
-                    response = requests.post(url, json=data, headers=headers)
+                    response = requests.post(url, json=data, headers=test_headers)
 
             success = response.status_code == expected_status
             if success:
