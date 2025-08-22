@@ -270,7 +270,11 @@ class StudyGenieAPITester:
         return success
 
     def test_get_quiz(self):
-        """Test getting quiz for document"""
+        """Test getting quiz for document (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
         if not self.document_id:
             print("❌ Skipping - No document ID available")
             return False
@@ -279,7 +283,7 @@ class StudyGenieAPITester:
         print("   Waiting 10 seconds for quiz generation...")
         time.sleep(10)
         
-        success, response = self.run_test("Get Quiz", "GET", f"documents/{self.document_id}/quiz", 200)
+        success, response = self.run_test("Get Quiz (Authenticated)", "GET", f"documents/{self.document_id}/quiz", 200)
         
         if success and isinstance(response, dict):
             questions = response.get('questions', [])
@@ -290,12 +294,16 @@ class StudyGenieAPITester:
         return success
 
     def test_get_flashcards(self):
-        """Test getting flashcards for document"""
+        """Test getting flashcards for document (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
         if not self.document_id:
             print("❌ Skipping - No document ID available")
             return False
         
-        success, response = self.run_test("Get Flashcards", "GET", f"documents/{self.document_id}/flashcards", 200)
+        success, response = self.run_test("Get Flashcards (Authenticated)", "GET", f"documents/{self.document_id}/flashcards", 200)
         
         if success and isinstance(response, dict):
             cards = response.get('cards', [])
@@ -306,7 +314,11 @@ class StudyGenieAPITester:
         return success
 
     def test_chat_functionality(self):
-        """Test AI tutor chat"""
+        """Test AI tutor chat (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
         if not self.document_id:
             print("❌ Skipping - No document ID available")
             return False
@@ -316,7 +328,7 @@ class StudyGenieAPITester:
             "message": "What is this document about?"
         }
         
-        success, response = self.run_test("AI Chat", "POST", "chat", 200, data=chat_data)
+        success, response = self.run_test("AI Chat (Authenticated)", "POST", "chat", 200, data=chat_data)
         
         if success and isinstance(response, dict):
             ai_response = response.get('response', '')
@@ -326,12 +338,21 @@ class StudyGenieAPITester:
         return success
 
     def test_get_chat_history(self):
-        """Test getting chat history"""
+        """Test getting chat history (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
         if not self.document_id:
             print("❌ Skipping - No document ID available")
             return False
         
-        return self.run_test("Get Chat History", "GET", f"documents/{self.document_id}/chat-history", 200)
+        success, response = self.run_test("Get Chat History (Authenticated)", "GET", f"documents/{self.document_id}/chat-history", 200)
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} chat messages")
+        
+        return success
 
     def test_error_handling(self):
         """Test error handling with invalid requests"""
