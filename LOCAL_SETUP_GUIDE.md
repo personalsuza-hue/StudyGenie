@@ -338,41 +338,74 @@ Create `.vscode/launch.json`:
 ### Port Already in Use
 ```bash
 # Kill process on port 8001 (backend)
+# Windows:
+netstat -ano | findstr :8001
+taskkill /PID <PID> /F
+
+# macOS/Linux:
 sudo lsof -t -i tcp:8001 | xargs kill -9
 
 # Kill process on port 3000 (frontend)  
+# Windows:
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# macOS/Linux:
 sudo lsof -t -i tcp:3000 | xargs kill -9
 ```
 
-### MongoDB Connection Issues
+### MongoDB Atlas Connection Issues
 ```bash
-# Check if MongoDB is running
-mongosh mongodb://localhost:27017
+# Check your connection string format:
+# mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/studygenie_db
 
-# If using Docker, check container status
-docker ps -a
-docker start studygenie-mongo
+# Common issues:
+# 1. Password contains special characters - URL encode them
+# 2. IP address not whitelisted - add your IP in Atlas Network Access
+# 3. Database user doesn't have proper permissions
+# 4. Network firewall blocking connection
 ```
 
 ### Python Virtual Environment Issues
 ```bash
 # Recreate virtual environment
-rm -rf venv
+rm -rf venv  # On Windows: rmdir /s venv
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
 ### Node.js/Yarn Issues
 ```bash
-# Clear npm/yarn cache
-npm cache clean --force
+# Clear cache and reinstall
 yarn cache clean
-
-# Delete node_modules and reinstall
-rm -rf node_modules
+rm -rf node_modules  # On Windows: rmdir /s node_modules
 yarn install
+
+# If yarn is not working, use npm:
+npm cache clean --force
+npm install
 ```
+
+### Google OAuth Issues
+1. **Check Google Cloud Console settings:**
+   - Ensure OAuth client is configured for "Web application"
+   - Verify redirect URIs and JavaScript origins
+   - Make sure Google+ API is enabled
+
+2. **Environment variables:**
+   - Ensure GOOGLE_CLIENT_ID matches in both backend and frontend .env files
+   - Check for typos in client ID and secret
+
+### AI Features Not Working
+1. **Check LLM API keys:**
+   - Verify EMERGENT_LLM_KEY is valid
+   - Check if you have sufficient credits/quota
+   
+2. **File processing issues:**
+   - For Windows: Install Tesseract OCR from https://github.com/UB-Mannheim/tesseract/wiki
+   - For macOS: `brew install tesseract`
+   - For Linux: `sudo apt-get install tesseract-ocr`
 
 ## Google OAuth Setup Verification
 
