@@ -484,9 +484,14 @@ async def get_quiz(document_id: str, current_user: User = Depends(get_current_us
         raise HTTPException(status_code=500, detail="Failed to fetch quiz")
 
 @api_router.get("/documents/{document_id}/flashcards")
-async def get_flashcards(document_id: str):
-    """Get flashcards for a document"""
+async def get_flashcards(document_id: str, current_user: User = Depends(get_current_user)):
+    """Get flashcards for a document owned by current user"""
     try:
+        # Verify document ownership first
+        document = await db.documents.find_one({"id": document_id, "user_id": current_user.id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+            
         flashcards = await db.flashcards.find_one({"document_id": document_id})
         if not flashcards:
             raise HTTPException(status_code=404, detail="Flashcards not found")
