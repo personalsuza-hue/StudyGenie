@@ -355,8 +355,12 @@ class StudyGenieAPITester:
         return success
 
     def test_error_handling(self):
-        """Test error handling with invalid requests"""
-        print("\n🔍 Testing Error Handling...")
+        """Test error handling with invalid requests (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
+        print("\n🔍 Testing Error Handling (Authenticated)...")
         
         # Test invalid document ID
         success1, _ = self.run_test("Invalid Document ID", "GET", "documents/invalid-id", 404)
@@ -369,6 +373,37 @@ class StudyGenieAPITester:
         success3, _ = self.run_test("Invalid Chat Request", "POST", "chat", 404, data=invalid_chat)
         
         return success1 and success2 and success3
+
+    def test_jwt_token_validation(self):
+        """Test JWT token validation"""
+        print("\n🔐 Testing JWT Token Validation...")
+        
+        # Test with invalid token
+        original_token = self.access_token
+        self.access_token = "invalid_jwt_token_123"
+        
+        success1, _ = self.run_test("Invalid JWT Token", "GET", "auth/me", 401)
+        
+        # Test with expired token (simulate by using a very old token)
+        import jwt
+        from datetime import datetime, timedelta
+        
+        expired_token_data = {
+            "user_id": "test_user_123",
+            "email": "testuser@studygenie.com",
+            "exp": datetime.utcnow() - timedelta(hours=1)  # Expired 1 hour ago
+        }
+        
+        jwt_secret = "your-super-secret-jwt-key-change-this-in-production-make-it-very-long-and-random"
+        expired_token = jwt.encode(expired_token_data, jwt_secret, algorithm="HS256")
+        
+        self.access_token = expired_token
+        success2, _ = self.run_test("Expired JWT Token", "GET", "auth/me", 401)
+        
+        # Restore original token
+        self.access_token = original_token
+        
+        return success1 and success2
 
 def main():
     print("🚀 Starting StudyGenie API Tests")
