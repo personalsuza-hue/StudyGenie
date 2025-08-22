@@ -39,6 +39,11 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI(title="StudyGenie API", description="AI-Powered Study Guide Generator")
 
+# Store database in app state for dependency access
+@app.on_event("startup")
+async def startup_db_client():
+    app.state.db = db
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
