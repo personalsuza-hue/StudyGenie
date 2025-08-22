@@ -337,11 +337,12 @@ async def google_auth(
         })
         
         # Set HTTP-only cookie for web clients
+        # secure=False for local development (HTTP), set to True for production (HTTPS)
         response.set_cookie(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,
+            secure=False,  # Set to True in production with HTTPS
             samesite="lax",
             max_age=60 * 60 * 24 * 7  # 7 days
         )
