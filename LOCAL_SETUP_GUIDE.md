@@ -181,29 +181,34 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 
 ### Step 7: Google OAuth Setup
 
-To enable Google authentication, you need to set up Google OAuth credentials:
+⚠️ **Important:** The current environment has placeholder Google OAuth credentials that **WILL NOT WORK** for your local setup.
 
-1. **Go to Google Cloud Console:**
-   - Visit [Google Cloud Console](https://console.cloud.google.com)
-   - Create a new project or select existing one
+**Option A: Quick Test (Use existing credentials - may have limitations)**
+- The current credentials might work for initial testing
+- Run `python test_google_auth.py` to check
 
-2. **Enable Google+ API:**
-   - Go to "APIs & Services" → "Library"
-   - Search for "Google+ API" and enable it
+**Option B: Create Your Own (Recommended for full functionality)**
+- Follow the detailed guide: `GOOGLE_OAUTH_SETUP.md`
+- This ensures you have full control and no usage limits
 
-3. **Create OAuth Credentials:**
-   - Go to "APIs & Services" → "Credentials"
-   - Click "Create Credentials" → "OAuth client ID"
-   - Choose "Web application"
-   - Add these URLs to "Authorized redirect URIs":
-     - `http://localhost:8001/api/auth/google/callback`
-   - Add these URLs to "Authorized JavaScript origins":
-     - `http://localhost:3000`
-     - `http://localhost:8001`
+To enable Google authentication with your own credentials:
 
-4. **Copy Credentials:**
-   - Copy the "Client ID" and "Client Secret"
-   - Update both `backend/.env` and `frontend/.env` files with these values
+1. **Follow the comprehensive guide:**
+   ```bash
+   # Check current OAuth configuration
+   python test_google_auth.py
+   
+   # If issues found, see GOOGLE_OAUTH_SETUP.md for step-by-step setup
+   ```
+
+2. **Quick setup summary:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com)
+   - Create project → APIs & Services → Credentials
+   - Create OAuth 2.0 Client ID for Web Application
+   - Add authorized origins: `http://localhost:3000`, `http://localhost:8001`
+   - Update both `.env` files with your credentials
+
+**For detailed instructions, see: `GOOGLE_OAUTH_SETUP.md`**
 
 ## Running the Application
 
