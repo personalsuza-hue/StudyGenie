@@ -28,6 +28,56 @@ import { Upload, FileText, MessageCircle, Brain, BookOpen, Lightbulb, CheckCircl
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// User Header Component
+const UserHeader = () => {
+  const { user, logout } = useAuth();
+
+  return (
+    <header className="bg-white border-b border-slate-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">StudyGenie</h1>
+              <p className="text-slate-600">AI-Powered Study Guide Generator</p>
+            </div>
+          </div>
+          
+          {user && (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                {user.picture && (
+                  <img 
+                    src={user.picture} 
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                )}
+                <div className="text-right">
+                  <p className="text-sm font-medium text-slate-800">{user.name}</p>
+                  <p className="text-xs text-slate-600">{user.email}</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={logout}
+                className="flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
 // File Upload Component
 const FileUploader = ({ onUpload, isUploading }) => {
   const [dragOver, setDragOver] = useState(false);
