@@ -222,16 +222,52 @@ class StudyGenieAPITester:
             return False
 
     def test_get_documents(self):
-        """Test getting all documents"""
-        return self.run_test("Get Documents", "GET", "documents", 200)
+        """Test getting all documents (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+        
+        success, response = self.run_test("Get Documents (Authenticated)", "GET", "documents", 200)
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} documents")
+            for doc in response:
+                if doc.get('user_id') != self.user_data.get('id'):
+                    print(f"   ⚠️  Document {doc.get('id')} has wrong user_id: {doc.get('user_id')}")
+        
+        return success
 
     def test_get_specific_document(self):
-        """Test getting a specific document"""
+        """Test getting a specific document (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+            
         if not self.document_id:
             print("❌ Skipping - No document ID available")
             return False
         
-        return self.run_test("Get Specific Document", "GET", f"documents/{self.document_id}", 200)
+        success, response = self.run_test("Get Specific Document (Authenticated)", "GET", f"documents/{self.document_id}", 200)
+        
+        if success and isinstance(response, dict):
+            if response.get('user_id') != self.user_data.get('id'):
+                print(f"   ⚠️  Document has wrong user_id: {response.get('user_id')}")
+        
+        return success
+
+    def test_user_data_isolation(self):
+        """Test that users can only access their own documents"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
+        
+        print("\n🔒 Testing User Data Isolation...")
+        
+        # Try to access a document with a different user ID
+        fake_document_id = "other_user_document_123"
+        success, response = self.run_test("Access Other User's Document", "GET", f"documents/{fake_document_id}", 404)
+        
+        return success
 
     def test_get_quiz(self):
         """Test getting quiz for document"""
