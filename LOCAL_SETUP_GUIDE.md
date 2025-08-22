@@ -1,6 +1,6 @@
-# StudyGenie - Local Development Setup Guide
+# StudyGenie - Local Development Setup Guide for VS Code
 
-This guide will help you clone and run StudyGenie locally on your machine using VS Code.
+This comprehensive guide will help you clone and run StudyGenie locally on your machine using VS Code with MongoDB Atlas.
 
 ## Prerequisites
 
@@ -15,21 +15,23 @@ Before starting, make sure you have the following installed on your machine:
    - Download from: https://python.org/
    - Verify installation: `python --version`
 
-3. **MongoDB** 
-   - **Option A - MongoDB Community Server (Local Installation):**
-     - Download from: https://www.mongodb.com/try/download/community
-     - Follow installation guide for your OS
-   - **Option B - MongoDB Docker Container (Recommended):**
-     ```bash
-     docker run --name studygenie-mongo -p 27017:27017 -d mongo:latest
-     ```
-
-4. **Git**
+3. **Git**
    - Download from: https://git-scm.com/
    - Verify installation: `git --version`
 
-5. **VS Code**
+4. **VS Code**
    - Download from: https://code.visualstudio.com/
+
+5. **Yarn Package Manager** (Recommended for frontend)
+   - Install globally: `npm install -g yarn`
+   - Verify installation: `yarn --version`
+
+### Cloud Services Setup
+
+6. **MongoDB Atlas Account**
+   - Create account at: https://www.mongodb.com/atlas
+   - Create a new cluster (free tier available)
+   - Get your connection string
 
 ### Recommended VS Code Extensions
 - Python
