@@ -192,25 +192,33 @@ class StudyGenieAPITester:
         return success
 
     def test_upload_image(self):
-        """Test image upload functionality with OCR"""
-        # Use an existing image file for testing
-        image_path = "/app/frontend/node_modules/@jest/core/build/assets/jest_logo.png"
-        
-        try:
-            with open(image_path, 'rb') as f:
-                image_content = f.read()
+        """Test image upload functionality with OCR (authenticated)"""
+        if not self.access_token:
+            print("❌ Skipping - No access token available")
+            return False
             
-            files = {'file': ('test_image.png', image_content, 'image/png')}
-            success, response = self.run_test("Upload Image", "POST", "upload", 200, files=files)
+        # Create a simple test image content
+        try:
+            # Create a minimal PNG image (1x1 pixel)
+            import base64
+            
+            # Minimal PNG data (1x1 transparent pixel)
+            png_data = base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77yQAAAABJRU5ErkJggg=='
+            )
+            
+            files = {'file': ('test_image.png', png_data, 'image/png')}
+            success, response = self.run_test("Upload Image (Authenticated)", "POST", "upload", 200, files=files)
             
             if success and isinstance(response, dict) and 'id' in response:
                 self.document_id = response['id']
                 print(f"   Document ID: {self.document_id}")
+                print(f"   User ID: {response.get('user_id', 'N/A')}")
                 return True
             return False
             
         except Exception as e:
-            print(f"   Error reading image file: {e}")
+            print(f"   Error creating test image: {e}")
             return False
 
     def test_get_documents(self):
