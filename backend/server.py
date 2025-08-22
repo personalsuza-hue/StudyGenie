@@ -310,6 +310,60 @@ def get_file_type(file_content: bytes) -> str:
 # Initialize AI generator
 ai_generator = AIContentGenerator()
 
+# Authentication Routes
+@api_router.post("/auth/google", response_model=LoginResponse)
+async def google_auth(
+    request: Request, 
+    token_request: GoogleTokenRequest
+):
+    """Authenticate with Google OAuth token"""
+    try:
+        auth_service = AuthService(db)
+        
+        # Verify Google token and get user data
+        google_user_data = await auth_service.verify_google_token(token_request.token)
+        
+        # Get or create user
+        user = await auth_service.get_or_create_user(google_user_data)
+        
+        # Create access token
+        access_token = auth_service.create_access_token(user)
+        
+        # Create response
+        response = JSONResponse({
+            "user": user.dict(),
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+        
+        # Set HTTP-only cookie for web clients
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7  # 7 days
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Google authentication failed: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+@api_router.post("/auth/logout")
+async def logout():
+    """Logout user"""
+    response = JSONResponse({"message": "Logged out successfully"})
+    response.delete_cookie("access_token")
+    return response
+
+@api_router.get("/auth/me", response_model=User)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
+
 # API Routes
 @api_router.get("/")
 async def root():
