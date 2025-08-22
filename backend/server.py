@@ -370,7 +370,10 @@ async def root():
     return {"message": "StudyGenie API is running!"}
 
 @api_router.post("/upload", response_model=Document)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...), 
+    current_user: User = Depends(get_current_user)
+):
     """Upload and process a document (PDF or image)"""
     try:
         # Read file content
@@ -389,8 +392,9 @@ async def upload_document(file: UploadFile = File(...)):
         if not text_content.strip():
             raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
         
-        # Create document record
+        # Create document record with user association
         document = Document(
+            user_id=current_user.id,  # Associate with current user
             filename=file.filename,
             file_type=file_type,
             content=text_content
